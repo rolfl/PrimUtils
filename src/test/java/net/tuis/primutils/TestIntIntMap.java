@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.IntStream;
 
+import net.tuis.ubench.UBench;
+
 import org.junit.Test;
 
 @SuppressWarnings("javadoc")
@@ -16,7 +18,7 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1, 0);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 6, iim.getBucketCount());
+        assertEquals(1 << 4, iim.getBucketCount());
     }
 
     @Test
@@ -24,7 +26,7 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1, -1);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 6, iim.getBucketCount());
+        assertEquals(1 << 4, iim.getBucketCount());
     }
 
     @Test
@@ -39,7 +41,7 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 6, iim.getBucketCount());
+        assertEquals(1 << 4, iim.getBucketCount());
         
     }
 
@@ -236,6 +238,36 @@ public class TestIntIntMap {
         assertEquals(act, iim.streamKeys().sum());
         
     }
+
+    @Test
+    public void testStreamEntries() {
+        IntIntMap iim = new IntIntMap(-1);
+        int[] keys = IntStream.range(0, 1000).toArray();
+        IntStream.of(keys).forEach(k -> iim.put(k, -k));
+        assertEquals(keys.length, iim.size());
+        
+        int kexpect = IntStream.of(keys).sum();
+        int kgot = iim.streamEntries().mapToInt(e -> e.getKey()).sum();
+        assertEquals(kexpect, kgot);
+        int vgot = iim.streamEntries().mapToInt(e -> e.getValue()).sum();
+        assertEquals(kexpect, -vgot);
+        
+        assertTrue(iim.streamEntries().allMatch(e -> e.getKey() == - e.getValue()));
+        
+    }
+    
+    @Test
+    public void testParallel() {
+        IntIntMap iim = new IntIntMap(10000);
+        int sum = 0;
+        for (int i = 0; i < 1000000; i++) {
+            sum += i;
+            iim.put(i, -i);
+        }
+        assertEquals(sum, iim.streamKeys().sum());
+        assertEquals(sum, iim.streamKeys().parallel().sum());
+    }
+    
     
     @Test
     public void testHCEquals() {
@@ -275,6 +307,24 @@ public class TestIntIntMap {
         assertNotEquals(iia.hashCode(), iib.hashCode());
         assertNotEquals(iia, iib);
 
+    }
+    
+    public static void main(String[] args) {
+        IntIntMap iim = new IntIntMap(10000);
+        int sum = 0;
+        for (int i = 0; i < 1000000; i++) {
+            sum += i;
+            iim.put(i, -i);
+        }
+        
+        final int expect = sum;
+        
+        UBench bench = new UBench("parallelSum");
+        bench.addIntTask("Seq", () -> iim.streamKeys().sum(), s -> s == expect);
+        bench.addIntTask("Pll", () -> iim.streamKeys().parallel().sum(), s -> s == expect);
+        
+        bench.report("WarmToo", bench.press(1000));
+            
     }
 
 }
