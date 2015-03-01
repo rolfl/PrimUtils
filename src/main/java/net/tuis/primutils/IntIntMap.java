@@ -1,6 +1,5 @@
 package net.tuis.primutils;
 
-import java.util.Arrays;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -114,15 +113,8 @@ public final class IntIntMap extends AbstractIntKeyIndex {
             return setValue(values, - index - 1, value);
         }
         
-        final int row = getMatrixRow(index);
-        final int col = getMatrixColumn(index);
-        if (row == values.length) {
-            values = Arrays.copyOf(values, extendSize(values.length));
-        }
-        if (values[row] == null) {
-            values[row] = buildIntRow();
-        }
-        values[row][col] = value;
+        values = ensure(values, index);
+        setValue(values, index, value);
         return notThere;
         
     }

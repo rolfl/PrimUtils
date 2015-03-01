@@ -155,11 +155,11 @@ public class PrimOps {
             throw new ArrayIndexOutOfBoundsException("No index " + index);
         }
         final int r = index >> KVSHIFT;
-        if (r > matrix.length) {
+        if (r >= matrix.length) {
             return 0;
         }
         final int[] row = matrix[r];
-        return row == null ? null : row[index & KVMASK];
+        return row == null ? 0 : row[index & KVMASK];
     }
 
     /**
