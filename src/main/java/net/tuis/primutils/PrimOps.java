@@ -1,6 +1,7 @@
 package net.tuis.primutils;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 /**
  * Collection of static methods useful when performing operations in this
@@ -104,6 +105,24 @@ public class PrimOps {
     public static final int MAX_SIZE = Integer.MAX_VALUE;
 
     /**
+     * Return the number of rows required to contain a dataset of the given
+     * size.
+     * 
+     * @param size
+     *            the size of the data to contain.
+     * @return the number of rows required to contain that size.
+     */
+    public static final int getRowsFor(final int size) {
+        if (size <= 0) {
+            return 0;
+        }
+        // for a size of that, the last item will be at index (size - 1).
+        // what row would that last index be in?
+        // we need 1 more than that.
+        return 1 + ((size - 1) >> KVSHIFT);
+    }
+
+    /**
      * Assuming a matrix as described by {@link #KVSHIFT}, set the value at a
      * particular index, and return the previous value there.
      * 
@@ -132,7 +151,15 @@ public class PrimOps {
      * @return the current value.
      */
     public static final int getValue(final int[][] matrix, final int index) {
-        return matrix[index >> KVSHIFT][index & KVMASK];
+        if (index < 0) {
+            throw new ArrayIndexOutOfBoundsException("No index " + index);
+        }
+        final int r = index >> KVSHIFT;
+        if (r > matrix.length) {
+            return 0;
+        }
+        final int[] row = matrix[r];
+        return row == null ? null : row[index & KVMASK];
     }
 
     /**
@@ -168,7 +195,15 @@ public class PrimOps {
      * @return the current value.
      */
     public static final <T> T getValue(final T[][] matrix, final int index) {
-        return matrix[index >> KVSHIFT][index & KVMASK];
+        if (index < 0) {
+            throw new ArrayIndexOutOfBoundsException("No index " + index);
+        }
+        final int r = index >> KVSHIFT;
+        if (r > matrix.length) {
+            return null;
+        }
+        final T[] row = matrix[r];
+        return row == null ? null : row[index & KVMASK];
     }
 
     /**
@@ -185,9 +220,36 @@ public class PrimOps {
         data[0] = buildIntRow();
         return data;
     }
-    
+
     /**
-     * Create a single int[] row of the right length used in a value matrix as described by {@link #KVSHIFT}
+     * Ensure that there is a location in the data matrix that will support the
+     * supplied index.
+     * 
+     * @param matrix
+     *            the matrix to check
+     * @param index
+     *            the index required.
+     * @return a possibly new matrix which has been extended to support the
+     *         index, or the old instance if it was large enough.
+     */
+    public static final int[][] ensure(int[][] matrix, final int index) {
+        if (index < 0) {
+            throw new ArrayIndexOutOfBoundsException("No index " + index);
+        }
+        final int row = index >>> KVSHIFT;
+        if (row >= matrix.length) {
+            matrix = Arrays.copyOf(matrix, extendSize(row));
+        }
+        if (matrix[row] == null) {
+            matrix[row] = buildIntRow();
+        }
+        return matrix;
+    }
+
+    /**
+     * Create a single int[] row of the right length used in a value matrix as
+     * described by {@link #KVSHIFT}
+     * 
      * @return the row as created for the matrix.
      */
     public static final int[] buildIntRow() {
@@ -215,11 +277,45 @@ public class PrimOps {
         data[0] = row;
         return data;
     }
-    
+
     /**
-     * Create a single row of the right length used in a value matrix as described by {@link #KVSHIFT}
-     * @param <V> the generic type of values in the matrix.
-     * @param vlass the class used to create the appropriate array instances.
+     * Ensure that there is a location in the data matrix that will support the
+     * supplied index.
+     * 
+     * @param <V>
+     *            the generic type of the contents of the array.
+     * @param vlass
+     *            a concrete instance of the class type that will be stored in
+     *            the resulting matrix.
+     * @param matrix
+     *            the matrix to check
+     * @param index
+     *            the index required.
+     * @return a possibly new matrix which has been extended to support the
+     *         index, or the old instance if it was large enough.
+     */
+    public static final <V> V[][] ensure(final Class<V> vlass, V[][] matrix, final int index) {
+        if (index < 0) {
+            throw new ArrayIndexOutOfBoundsException("No index " + index);
+        }
+        final int row = index >>> KVSHIFT;
+        if (row >= matrix.length) {
+            matrix = Arrays.copyOf(matrix, extendSize(row));
+        }
+        if (matrix[row] == null) {
+            matrix[row] = buildValueRow(vlass);
+        }
+        return matrix;
+    }
+
+    /**
+     * Create a single row of the right length used in a value matrix as
+     * described by {@link #KVSHIFT}
+     * 
+     * @param <V>
+     *            the generic type of values in the matrix.
+     * @param vlass
+     *            the class used to create the appropriate array instances.
      * @return the row as created for the matrix.
      */
     public static final <V> V[] buildValueRow(Class<V> vlass) {
@@ -227,10 +323,15 @@ public class PrimOps {
     }
 
     /**
-     * Create a single dimension array of the specified length. This is a generics-safe convenience method.
-     * @param <V> the generic type of values in the array.
-     * @param vlass the class used to create the appropriate array instances.
-     * @param length the length of the array to create.
+     * Create a single dimension array of the specified length. This is a
+     * generics-safe convenience method.
+     * 
+     * @param <V>
+     *            the generic type of values in the array.
+     * @param vlass
+     *            the class used to create the appropriate array instances.
+     * @param length
+     *            the length of the array to create.
      * @return the row as created for the matrix.
      */
     public static final <V> V[] buildValueArray(Class<V> vlass, int length) {
@@ -240,8 +341,11 @@ public class PrimOps {
     }
 
     /**
-     * Identify which row an index would appear in a value matrix as described by {@link #KVSHIFT}
-     * @param index the index to get the row for.
+     * Identify which row an index would appear in a value matrix as described
+     * by {@link #KVSHIFT}
+     * 
+     * @param index
+     *            the index to get the row for.
      * @return the row in which that index would appear.
      */
     public static final int getMatrixRow(int index) {
@@ -249,8 +353,11 @@ public class PrimOps {
     }
 
     /**
-     * Identify which column an index would appear in a value matrix as described by {@link #KVSHIFT}
-     * @param index the index to get the column for.
+     * Identify which column an index would appear in a value matrix as
+     * described by {@link #KVSHIFT}
+     * 
+     * @param index
+     *            the index to get the column for.
      * @return the column in which that index would appear.
      */
     public static final int getMatrixColumn(int index) {
@@ -279,7 +386,7 @@ public class PrimOps {
         }
         return ns;
     }
-    
+
     private PrimOps() {
         // inaccessible constructor.
     }
