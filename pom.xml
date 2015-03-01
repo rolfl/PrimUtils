@@ -6,7 +6,8 @@
   <name>Primitive Utils</name>
   <description>Classes and structures useful for dealing with more complex primitive use cases.</description>
   <build>
-    <sourceDirectory>src</sourceDirectory>
+    <sourceDirectory>src/main/java</sourceDirectory>
+	<testSourceDirectory>src/test/java</testSourceDirectory>
     <plugins>
 		<plugin>
 			<artifactId>maven-compiler-plugin</artifactId>
