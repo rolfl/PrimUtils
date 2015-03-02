@@ -70,7 +70,7 @@ public final class IntKeyIndex {
     private int[] bucketSize;
     private int size;
     private int mask;
-    private int[] deletedIndices = new int[10];
+    private int[] deletedIndices = null;
     private int deletedCount = 0;
     private int modCount = 0;
 
@@ -435,6 +435,9 @@ public final class IntKeyIndex {
     }
 
     private void deleteIndex(final int index) {
+        if (deletedCount == 0 && deletedIndices == null) {
+            deletedIndices = new int[INITIAL_BUCKET_SIZE];
+        }
         if (deletedCount == deletedIndices.length) {
             deletedIndices = Arrays.copyOf(deletedIndices, extendSize(deletedIndices.length));
         }
