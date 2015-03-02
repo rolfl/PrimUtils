@@ -4,8 +4,6 @@ import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.tuis.primutils.PrimOps.*;
-
 /**
  * Relate one int value to another, in a memory efficient way.
  * <p>
@@ -23,9 +21,10 @@ import static net.tuis.primutils.PrimOps.*;
  * @author rolf
  *
  */
-public final class IntIntMap extends AbstractIntKeyIndex {
+public final class IntIntMap {
 
-    private int[][] values;
+    private final IntKeyIndex keyindex;
+    private final IntArray values;
 
     private final int notThere;
 
@@ -40,9 +39,9 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      *            the initial capacity to budget for.
      */
     public IntIntMap(final int notThere, final int capacity) {
-        super(capacity);
+        keyindex = new IntKeyIndex(capacity);
         this.notThere = notThere;
-        values = buildIntMatrix(8);
+        values = new IntArray();
     }
 
     /**
@@ -72,7 +71,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return the Map size
      */
     public int size() {
-        return kiSize();
+        return keyindex.size();
     }
 
     /**
@@ -81,7 +80,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return true if there are no mappings.
      */
     public boolean isEmpty() {
-        return kiIsEmpty();
+        return keyindex.isEmpty();
     }
 
     /**
@@ -92,7 +91,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return true if the key was previously mapped.
      */
     public boolean containsKey(final int key) {
-        return kiContainsKey(key);
+        return keyindex.containsKey(key);
     }
 
     /**
@@ -107,14 +106,13 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      */
     public int put(final int key, final int value) {
         // assume it is NOT there already implicit -i-1
-        final int index = - kiAdd(key) - 1;
+        final int index = - keyindex.add(key) - 1;
         if (index < 0) {
             // we were wrong, reverse the assumption
-            return setValue(values, - index - 1, value);
+            return values.set(- index - 1, value);
         }
         
-        values = ensure(values, index);
-        setValue(values, index, value);
+        values.set(index, value);
         return notThere;
         
     }
@@ -128,8 +126,8 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      *         key is not mapped.
      */
     public int get(final int key) {
-        final int pos = kiGetIndex(key);
-        return pos < 0 ? notThere : getValue(values, pos);
+        final int pos = keyindex.getIndex(key);
+        return pos < 0 ? notThere : values.get(pos);
     }
 
     /**
@@ -141,8 +139,8 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      *         {@link #getNotThere()} if the key is not mapped.
      */
     public int remove(final int key) {
-        int old = kiRemove(key);
-        return old < 0 ? notThere : getValue(values, old);
+        int old = keyindex.remove(key);
+        return old < 0 ? notThere : values.get(old);
     }
 
     /**
@@ -150,7 +148,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * reservations will not be affected.
      */
     public void clear() {
-        kiClear();
+        keyindex.clear();
     }
 
     /**
@@ -162,7 +160,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return the mapped keys.
      */
     public int[] getKeys() {
-        return kiGetKeys();
+        return keyindex.getKeys();
     }
 
     /**
@@ -188,7 +186,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return the mapped keys.
      */
     public IntStream streamKeys() {
-        return kiStreamKeys();
+        return keyindex.streamKeys();
     }
 
     /**
@@ -202,7 +200,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return all values in the map in the matching order as {@link #getKeys()}
      */
     public IntStream streamValues() {
-        return kiStreamIndices().map(i -> getValue(values, i));
+        return keyindex.streamIndices().map(i -> values.get(i));
     }
     
     /**
@@ -210,7 +208,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @return the stream of all mappings.
      */
     public Stream<IntKIntVEntry> streamEntries() {
-        return kiStreamEntries().map(e -> new IntKIntVEntry(e.getKey(), getValue(values, e.getValue())));
+        return keyindex.streamEntries().map(e -> new IntKIntVEntry(e.getKey(), values.get(e.getValue())));
     }
 
     /**
@@ -245,8 +243,8 @@ public final class IntIntMap extends AbstractIntKeyIndex {
     }
 
     private void applyOperator(final int key, final IntBinaryOperator operator) {
-        int index = kiGetIndex(key);
-        setValue(values, index, operator.applyAsInt(key, getValue(values, index)));
+        int index = keyindex.getIndex(key);
+        values.preApply(index, v -> operator.applyAsInt(key, v));
     }
 
     @Override
@@ -255,7 +253,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
             return 0;
         }
         int vhc = streamValues().reduce((x, p) -> x ^ p).getAsInt();
-        int khc = kiKeyHashCode();
+        int khc = keyindex.getKeyHashCode();
         return Integer.rotateRight(khc, 13) ^ vhc;
     }
 
@@ -277,7 +275,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
 
     @Override
     public String toString() {
-        return kiReport();
+        return keyindex.report();
     }
 
     /* *****************************************************************
@@ -286,7 +284,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      */
 
     private boolean same(final IntIntMap them, final int key) {
-        final int val = getValue(values, kiGetIndex(key));
+        final int val = values.get(keyindex.getIndex(key));
         int t = them.get(key);
         if (t != val) {
             return false;

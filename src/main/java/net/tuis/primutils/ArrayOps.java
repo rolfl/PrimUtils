@@ -1,5 +1,7 @@
 package net.tuis.primutils;
 
+import java.lang.reflect.Array;
+
 /**
  * Common dynamic array tools used by various classes in this package.
  * @author rolf
@@ -114,6 +116,49 @@ public class ArrayOps {
             throw new IllegalStateException("Unable to have more than " + MAX_SIZE + " values in the Map");
         }
         return ns;
+    }
+    
+    /**
+     * Build a standard-width matrix of the specified type and row count initial capacity.
+     * 
+     * @param <T> the generic type of the values to be stored in the matrix.
+     * @param vlass the class instance used for creating the correctly typed arrays
+     * @param rows the number of rows to seed the matrix with.
+     * @return the seeded matrix.
+     */
+    public static final <T> T[][] buildMatrix(Class<T> vlass, int rows) {
+        T[] row = buildRow(vlass);
+        @SuppressWarnings("unchecked")
+        T[][] matrix = (T[][])Array.newInstance(row.getClass(), rows);
+        matrix[0] = row;
+        return matrix;
+    }
+
+    
+    /**
+     * Build a single row of the standard size for a matrix.
+     * 
+     * @param <T> the generic type of the values.
+     * @param tlass the class instance to build the array for. 
+     * @return a standard-sized array of the specified type.
+     */
+    public static final <T> T[] buildRow(Class<T> tlass) {
+        return ArrayOps.buildArray(tlass, KVEXTENT);
+    }
+
+    
+    
+    /**
+     * Build an array of the specified type, and size.
+     * @param <T> the generic type of the array type.
+     * @param vlass the class representing the generic type.
+     * @param size the size array to create.
+     * @return the newly created array.
+     */
+    public static <T> T[] buildArray(Class<T> vlass, int size) {
+        @SuppressWarnings("unchecked")
+        T[] array = (T[])Array.newInstance(vlass, size);
+        return array;
     }
 
 

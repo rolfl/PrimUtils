@@ -1,13 +1,10 @@
 package net.tuis.primutils;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static net.tuis.primutils.PrimOps.*;
 
 /**
  * Relate one int value to a Typed Object, in a memory efficient way.
@@ -18,9 +15,10 @@ import static net.tuis.primutils.PrimOps.*;
  * @param <V> The generic type of values stored in this map.
  *
  */
-public class IntMap<V> extends AbstractIntKeyIndex {
+public class IntMap<V> {
     
-    private V[][] values;
+    private final IntKeyIndex keyindex;
+    private final VArray<V> values;
     private final Class<V> klass;
     
     /**
@@ -29,9 +27,9 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @param capacity the initial capacity to support.
      */
     public IntMap(Class<V> klass, int capacity) {
-        super (capacity);
+        keyindex = new IntKeyIndex(capacity);
         this.klass = klass;
-        values = buildValueMatrix(klass, 8);
+        values = new VArray<>(klass);
     }
     
     /**
@@ -40,7 +38,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return the Map size
      */
     public int size() {
-        return kiSize();
+        return keyindex.size();
     }
 
     /**
@@ -49,7 +47,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return true if there are no mappings.
      */
     public boolean isEmpty() {
-        return kiIsEmpty();
+        return keyindex.isEmpty();
     }
 
     /**
@@ -60,7 +58,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return true if the key was previously mapped.
      */
     public boolean containsKey(final int key) {
-        return kiContainsKey(key);
+        return keyindex.containsKey(key);
     }
 
     /**
@@ -75,21 +73,13 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      */
     public V put(final int key, final V value) {
         // assume it is NOT there already implicit -i-1
-        final int index = - kiAdd(key) - 1;
+        final int index = - keyindex.add(key) - 1;
         if (index < 0) {
             // we were wrong, reverse the assumption
-            return setValue(values, - index - 1, value);
+            return values.set(- index - 1, value);
         }
         
-        final int row = getMatrixRow(index);
-        final int col = getMatrixColumn(index);
-        if (row == values.length) {
-            values = Arrays.copyOf(values, extendSize(values.length));
-        }
-        if (values[row] == null) {
-            values[row] = buildValueRow(klass);
-        }
-        values[row][col] = value;
+        values.set(index, value);
         return null;
         
     }
@@ -103,8 +93,8 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      *         key is not mapped.
      */
     public V get(final int key) {
-        final int pos = kiGetIndex(key);
-        return pos < 0 ? null : getValue(values, pos);
+        final int pos = keyindex.getIndex(key);
+        return pos < 0 ? null : values.get(pos);
     }
 
     /**
@@ -116,8 +106,8 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      *         null if the key is not mapped.
      */
     public V remove(final int key) {
-        int old = kiRemove(key);
-        return old < 0 ? null : setValue(values, old, null);
+        int old = keyindex.remove(key);
+        return old < 0 ? null : values.set(old, null);
     }
 
     /**
@@ -125,9 +115,9 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * reservations will not be affected.
      */
     public void clear() {
-        kiClear();
+        keyindex.clear();
         // GC values.
-        Arrays.fill(values, null);
+        values.clear();
     }
 
     /**
@@ -139,7 +129,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return the mapped keys.
      */
     public int[] getKeys() {
-        return kiGetKeys();
+        return keyindex.getKeys();
     }
 
     /**
@@ -153,7 +143,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return all values in the map in the matching order as {@link #getKeys()}
      */
     public V[] getValues() {
-        return streamValues().collect(Collectors.toList()).toArray(buildValueArray(klass, 0));
+        return streamValues().collect(Collectors.toList()).toArray(ArrayOps.buildArray(klass, 0));
     }
 
     /**
@@ -165,7 +155,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return the mapped keys.
      */
     public IntStream streamKeys() {
-        return kiStreamKeys();
+        return keyindex.streamKeys();
     }
 
     /**
@@ -179,7 +169,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      * @return all values in the map in the matching order as {@link #getKeys()}
      */
     public Stream<V> streamValues() {
-        return kiStreamIndices().mapToObj(i -> getValue(values, i));
+        return keyindex.streamIndices().mapToObj(i -> values.get(i));
     }
 
     /**
@@ -214,8 +204,8 @@ public class IntMap<V> extends AbstractIntKeyIndex {
     }
 
     private void applyOperator(final int key, final BiFunction<Integer,V, V> operator) {
-        int index = kiGetIndex(key);
-        setValue(values, index, operator.apply(key, getValue(values, index)));
+        int index = keyindex.getIndex(key);
+        values.set(index, operator.apply(key, values.get(index)));
     }
 
     @Override
@@ -224,7 +214,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
             return 0;
         }
         int vhc = streamValues().mapToInt(Objects::hashCode).reduce((x, p) -> x ^ p).getAsInt();
-        int khc = kiKeyHashCode();
+        int khc = keyindex.getKeyHashCode();
         return Integer.rotateRight(khc, 13) ^ vhc;
     }
 
@@ -246,7 +236,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
 
     @Override
     public String toString() {
-        return kiReport();
+        return keyindex.report();
     }
 
     /* *****************************************************************
@@ -255,7 +245,7 @@ public class IntMap<V> extends AbstractIntKeyIndex {
      */
 
     private boolean same(final IntIntMap them, final int key) {
-        final V val = getValue(values, kiGetIndex(key));
+        final V val = values.get(keyindex.getIndex(key));
         int t = them.get(key);
         if (!Objects.equals(t, val)) {
             return false;

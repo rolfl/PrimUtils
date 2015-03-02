@@ -18,7 +18,6 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1, 0);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 4, iim.getBucketCount());
     }
 
     @Test
@@ -26,14 +25,12 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1, -1);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 4, iim.getBucketCount());
     }
 
     @Test
     public void testIntIntMapIntIntHuge() {
         IntIntMap iim = new IntIntMap(-1, Integer.MAX_VALUE >> 4);
         assertEquals(0, iim.size());
-        assertEquals(1 << 21, iim.getBucketCount());
     }
 
     @Test
@@ -41,8 +38,6 @@ public class TestIntIntMap {
         IntIntMap iim = new IntIntMap(-1);
         assertEquals(0, iim.size());
         assertTrue(iim.isEmpty());
-        assertEquals(1 << 4, iim.getBucketCount());
-        
     }
 
     @Test
@@ -87,7 +82,6 @@ public class TestIntIntMap {
         
         assertEquals(-1, iim.put(Integer.MAX_VALUE, 20));
         assertEquals(3, iim.size());
-        assertEquals(3, iim.getSumSizes());
         
     }
 
@@ -143,11 +137,9 @@ public class TestIntIntMap {
         assertEquals(-1, iim.remove(1));
         assertEquals(-1, iim.put(1, 1));
         assertEquals(-1, iim.put(2, 2));
-        assertEquals(2, iim.getSumSizes());
         
         assertEquals(1, iim.get(1));
         assertEquals(1, iim.remove(1));
-        assertEquals(1, iim.getSumSizes());
         
         assertEquals(-1, iim.get(1));
         
@@ -156,11 +148,9 @@ public class TestIntIntMap {
         
         assertEquals(-1, iim.get(5));
         assertEquals(-1, iim.remove(5));
-        assertEquals(1, iim.getSumSizes());
         
         assertEquals(2, iim.get(2));
         assertEquals(2, iim.remove(2));
-        assertEquals(0, iim.getSumSizes());
         assertEquals(-1, iim.get(2));
         assertEquals(-1, iim.remove(2));
         
