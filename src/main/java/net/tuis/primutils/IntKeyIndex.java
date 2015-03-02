@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static net.tuis.primutils.PrimOps.*;
+import static net.tuis.primutils.ArrayOps.*;
 
 /**
  * Relate unique key values to an int index.
