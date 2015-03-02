@@ -5,7 +5,7 @@ package net.tuis.primutils;
  * @author rolf
  *
  */
-class ArrayOps {
+public class ArrayOps {
 
 
     /**

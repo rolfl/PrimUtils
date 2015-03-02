@@ -102,7 +102,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      *            the key to add
      * @param value
      *            the associated value
-     * @return the previous value associated with the key, or {@link #notThere}
+     * @return the previous value associated with the key, or {@link #getNotThere()}
      *         if the key is not previously mapped.
      */
     public int put(final int key, final int value) {
@@ -124,7 +124,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * 
      * @param key
      *            the key to get the value for.
-     * @return the value associated with the key, or {@link #notThere} if the
+     * @return the value associated with the key, or {@link #getNotThere()} if the
      *         key is not mapped.
      */
     public int get(final int key) {
@@ -138,7 +138,7 @@ public final class IntIntMap extends AbstractIntKeyIndex {
      * @param key
      *            the key to remove
      * @return the value previously associated with the key, or
-     *         {@link #notThere} if the key is not mapped.
+     *         {@link #getNotThere()} if the key is not mapped.
      */
     public int remove(final int key) {
         int old = kiRemove(key);
