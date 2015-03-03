@@ -112,7 +112,9 @@ public final class IntIntMap {
             return values.set(- index - 1, value);
         }
         
-        values.set(index, value);
+        if (index != values.push(value)) {
+            throw new IllegalStateException("Internal accounting error: " + index + " -> " + values.getBound());
+        }
         return notThere;
         
     }

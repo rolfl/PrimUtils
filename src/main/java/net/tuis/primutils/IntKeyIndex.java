@@ -478,7 +478,9 @@ public final class IntKeyIndex {
             keys.set(pos, key);
             return pos;
         }
-        keys.set(size, key);
+        if (size != keys.push(key)) {
+            throw new IllegalStateException("Internal accounting error: " + size + " -> " + keys.getBound());
+        }
         return size++;
     }
 
