@@ -313,7 +313,7 @@ public class TestIntIntMap {
         bench.addIntTask("Seq", () -> iim.streamKeys().sum(), s -> s == expect);
         bench.addIntTask("Pll", () -> iim.streamKeys().parallel().sum(), s -> s == expect);
         
-        bench.report("WarmToo", bench.press(1000));
+        bench.press(1000).report();
             
     }
 

@@ -27,7 +27,7 @@ public class TestIntArray {
 
     @Test
     public void testStreamMax() {
-        long expect = (long)Integer.MAX_VALUE + 1L;
+        long expect = Integer.MAX_VALUE + 1L;
         long start = System.nanoTime();
         IntArray ia = new IntArray(Integer.MAX_VALUE);
         
